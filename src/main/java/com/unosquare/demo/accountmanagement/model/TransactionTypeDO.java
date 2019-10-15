@@ -13,7 +13,6 @@ import javax.validation.constraints.NotBlank;
 public class TransactionTypeDO {
 
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Integer id;
 	
 	@NotBlank
