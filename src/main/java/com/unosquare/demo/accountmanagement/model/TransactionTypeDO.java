@@ -1,4 +1,4 @@
-package com.unosquare.demo.accountmanagement.util;
+package com.unosquare.demo.accountmanagement.model;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

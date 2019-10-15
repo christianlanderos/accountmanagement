@@ -14,8 +14,6 @@ import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.validation.constraints.NotBlank;
 
-import com.unosquare.demo.accountmanagement.util.TransactionTypeDO;
-
 @Entity
 @Table(name="transactions")
 public class TransactionDO {
