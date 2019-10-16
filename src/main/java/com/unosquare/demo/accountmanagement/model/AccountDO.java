@@ -12,8 +12,11 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
+
+import com.unosquare.demo.accountmanagement.util.Constants;
 
 @Entity
 @Table(name="accounts")
@@ -25,22 +28,23 @@ public class AccountDO {
 	private Long number; // account number
 	
 	@NotBlank
-	@Column(name="accountPin", length=4)
-	@Pattern(regexp="[0-9]{4}")
-	private String accountPin; // 4 digit code; non zero; required
+	@Max(Constants.MAX_PIN_VALUE)
+	@Min(Constants.MIN_PIN_VALUE)
+	@Column(name="pin", length=4)
+	private Integer pin; // 4 digit code; non zero; required
 	
 	private Double balance;
 	
-	// TODO: Ver como limitarlo a 5 registros 
 	//@OneToMany
 	//@JoinTable(name="SELECT * FROM transactions WHERE ??? ORDER BY date desc LIMIT 5")
 	@OneToMany(cascade=CascadeType.ALL, mappedBy="accountDO")
 	private List<TransactionDO> transactionDOList; // Latest 5 transactions
 	
 	@OneToOne(optional=false)
-	@JoinColumn(name="id")
+	@JoinColumn(name="ssn")
 	private HolderDO holderDO;
 	
+	private Boolean enabled;
 	
 	public Long getNumber() {
 		return number;
@@ -48,11 +52,11 @@ public class AccountDO {
 	public void setNumber(Long number) {
 		this.number = number;
 	}
-	public String getAccountPin() {
-		return accountPin;
+	public Integer getPin() {
+		return pin;
 	}
-	public void setAccountPin(String accountPin) {
-		this.accountPin = accountPin;
+	public void setPin(Integer pin) {
+		this.pin = pin;
 	}
 	public Double getBalance() {
 		return balance;
@@ -65,6 +69,18 @@ public class AccountDO {
 	}
 	public void setTransactionDOList(List<TransactionDO> transactionDOList) {
 		this.transactionDOList = transactionDOList;
+	}
+	public HolderDO getHolderDO() {
+		return holderDO;
+	}
+	public void setHolderDO(HolderDO holderDO) {
+		this.holderDO = holderDO;
+	}
+	public Boolean getEnabled() {
+		return enabled;
+	}
+	public void setEnabled(Boolean enabled) {
+		this.enabled = enabled;
 	}
 	
 	

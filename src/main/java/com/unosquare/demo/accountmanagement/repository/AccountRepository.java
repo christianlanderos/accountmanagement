@@ -8,5 +8,6 @@ import com.unosquare.demo.accountmanagement.model.AccountDO;
 @Repository
 public interface AccountRepository extends JpaRepository<AccountDO, Long> {
 
-	AccountDO findByHolderDO_id(Long id);
+	AccountDO findByHolderDO_ssnAndPin(Long ssn, Integer accountPin);
+	
 }

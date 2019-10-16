@@ -10,7 +10,7 @@ import javax.validation.constraints.NotBlank;
 public class HolderDO {
 
 	@Id
-	private Long id; // NSS
+	private Long ssn;
 	
 	@NotBlank
 	private String firstName; // required
@@ -19,11 +19,12 @@ public class HolderDO {
 	private String lastName; // required
 	
 	
-	public Long getId() {
-		return id;
+	
+	public Long getSsn() {
+		return ssn;
 	}
-	public void setId(Long id) {
-		this.id = id;
+	public void setSsn(Long ssn) {
+		this.ssn = ssn;
 	}
 	public String getFirstName() {
 		return firstName;

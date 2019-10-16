@@ -69,6 +69,12 @@ public class TransactionDO {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	public AccountDO getAccountDO() {
+		return accountDO;
+	}
+	public void setAccountDO(AccountDO accountDO) {
+		this.accountDO = accountDO;
+	}
 	
 	
 	

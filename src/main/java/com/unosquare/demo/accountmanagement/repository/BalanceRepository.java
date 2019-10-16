@@ -10,5 +10,5 @@ import com.unosquare.demo.accountmanagement.model.TransactionDO;
 public interface BalanceRepository extends JpaRepository<TransactionDO, Long>  {
 
 	@Query("SELECT SUM(amount) FROM TransactionDO t WHERE t.accountDO.number = ?1")
-	Double getBalance(Long number);
+	Double getBalance(Long accountNumber);
 }
