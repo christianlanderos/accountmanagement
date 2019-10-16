@@ -38,7 +38,7 @@ public class AccountDO {
 	//@OneToMany
 	//@JoinTable(name="SELECT * FROM transactions WHERE ??? ORDER BY date desc LIMIT 5")
 	@OneToMany(cascade=CascadeType.ALL, mappedBy="accountDO")
-	private List<TransactionDO> transactionDOList; // Latest 5 transactions
+	private List<TransactionDO> transactionDOList;
 	
 	@OneToOne(optional=false)
 	@JoinColumn(name="ssn")

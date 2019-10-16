@@ -15,6 +15,9 @@ public final class Constants {
 	public static final int TRASACTION_TYPE_DEBIT = 3;
 	public static final int TRASACTION_TYPE_CHECK = 4;
 	
+	public static final int ERROR_CODE = -1;
+	public static final int SUCCESS_CODE = 1;
+	public static final String GENERAL_SUCCESS_MESSAGE = "Successful operation";
 	
 	
 	private Constants(){

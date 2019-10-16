@@ -68,7 +68,8 @@ public class AccountServiceImpl implements AccountService {
 
 	@Transactional
 	@Override
-	public AccountDO closeAccount(Long accountNumber) throws UnsupportedOperationException {
+	public AccountDO closeAccount(Long accountNumber) 
+			throws IllegalArgumentException, UnsupportedOperationException {
 		
 		AccountDO accountDO = null;
 		
@@ -243,7 +244,8 @@ public class AccountServiceImpl implements AccountService {
 		return true;
 	}
 	
-	private void validateTransactionParams(Long accountNumber, Integer accountPin, Double amount) throws IllegalArgumentException {
+	private void validateTransactionParams(Long accountNumber, Integer accountPin, Double amount)
+			throws IllegalArgumentException {
 		
 		if ( accountNumber == null )
 			throw new IllegalArgumentException("Account number must not be null");
