@@ -68,7 +68,7 @@ public class AccountServiceImpl implements AccountService {
 
 	@Transactional
 	@Override
-	public AccountDO closeAccount(Long accountNumber) throws IllegalArgumentException {
+	public AccountDO closeAccount(Long accountNumber) throws UnsupportedOperationException {
 		
 		AccountDO accountDO = null;
 		
@@ -77,6 +77,9 @@ public class AccountServiceImpl implements AccountService {
 		
 		accountDO = accountRepository.getOne( accountNumber );
 		if ( accountDO != null ) {
+			
+			if ( accountDO.getBalance() < 0D )
+				throw new UnsupportedOperationException("The account is overdrawn, therefore it cannot be closed");
 			
 			accountDO.setEnabled( Boolean.FALSE );
 			accountRepository.save( accountDO );
@@ -87,7 +90,7 @@ public class AccountServiceImpl implements AccountService {
 
 	@Transactional
 	@Override
-	public AccountDO deposit(Long accountNumber, Double amount) {
+	public AccountDO deposit(Long accountNumber, Double amount) throws IllegalArgumentException {
 		
 		AccountDO updatedAccountDO = null;
 		String description = "Deposit into account";
@@ -104,7 +107,7 @@ public class AccountServiceImpl implements AccountService {
 
 	@Transactional
 	@Override
-	public AccountDO withdrawal(Long accountNumber, Double amount) {
+	public AccountDO withdrawal(Long accountNumber, Double amount) throws IllegalArgumentException {
 
 		AccountDO updatedAccountDO = null;
 		String description = "Withdrawal from account";
@@ -120,7 +123,7 @@ public class AccountServiceImpl implements AccountService {
 	}
 
 	@Override
-	public Double getBalance(Long accountNumber) {
+	public Double getBalance(Long accountNumber) throws IllegalArgumentException {
 		
 		Double currentBalance = null;
 		
@@ -134,7 +137,11 @@ public class AccountServiceImpl implements AccountService {
 
 	@Transactional
 	@Override
-	public Long processDebitCheck(Long accountNumber, Double amount, Integer type, String description) {
+	public Long processDebitCheck(Long accountNumber, Double amount, Integer type,
+			String description) throws IllegalArgumentException {
+		
+		AccountDO updatedAccountDO = null;
+		Long transactionId = null;
 		
 		if ( accountNumber == null )
 			throw new IllegalArgumentException("Account number must not be null");
@@ -144,42 +151,52 @@ public class AccountServiceImpl implements AccountService {
 			throw new IllegalArgumentException("Type must not be null and must be a value of 3 or 4 (3=Debit, 4=Check).");
 		if ( description == null || description.trim().equals(Constants.EMPTY_STRING) )
 			throw new IllegalArgumentException("Description must not be null or empty.");
-		processTransaction(accountNumber, amount, Constants.TRASACTION_TYPE_WITHDRAWAL, description);
 		
-		return null;
+		updatedAccountDO = processTransaction(accountNumber, amount, Constants.TRASACTION_TYPE_WITHDRAWAL, description);
+		if ( updatedAccountDO != null && 
+			 updatedAccountDO.getTransactionDOList() != null && 
+			 updatedAccountDO.getTransactionDOList().get(0) != null ) {
+		
+			transactionId = updatedAccountDO.getTransactionDOList().get(0).getId();
+		}
+		return transactionId;
 	}
 	
-	private synchronized AccountDO processTransaction(Long accountNumber, Double amount, int type, String description) {
+	@Transactional
+	private synchronized AccountDO processTransaction(Long accountNumber, 
+			Double amount, int type, String description) throws UnsupportedOperationException {
 		
 		AccountDO updatedAccountDO = null;
 		Double currentBalance = null;
 		
-		if (type == Constants.TRASACTION_TYPE_WITHDRAWAL || type == Constants.TRASACTION_TYPE_DEBIT) {
-		
-			currentBalance = balanceRepository.getBalance( accountNumber );
-			if ( currentBalance < amount ) 
-				throw new UnsupportedOperationException("Account without enough funds");
-		}
-		
-		TransactionDO transactionDO = new TransactionDO();
-		transactionDO.setAmount( -1 * amount );
-		transactionDO.setDate( new Date() );
-		transactionDO.setDescription( description );
-		
-		TransactionTypeDO transactionTypeDO = new TransactionTypeDO();
-		transactionTypeDO.setId( type );
-		transactionDO.setTransactionTypeDO( transactionTypeDO );
-		
-		AccountDO accountDO = new AccountDO();
-		accountDO.setNumber( accountNumber );
-		transactionDO.setAccountDO( accountDO );
-		
-		transactionRepository.save( transactionDO );
-		
-		currentBalance = balanceRepository.getBalance( accountNumber );
 		AccountDO retreivedAccountDO = accountRepository.getOne( accountNumber );
 		if ( retreivedAccountDO != null ) {
+		
+			if (type == Constants.TRASACTION_TYPE_WITHDRAWAL || type == Constants.TRASACTION_TYPE_DEBIT) {
 			
+				currentBalance = retreivedAccountDO.getBalance();
+				if ( currentBalance < 0D )
+					throw new UnsupportedOperationException("Forbidden transaction. The account is overdrawn");
+				if ( currentBalance < amount ) 
+					throw new UnsupportedOperationException("Account without enough funds");
+			}
+			
+			TransactionDO transactionDO = new TransactionDO();
+			transactionDO.setAmount( -1 * amount );
+			transactionDO.setDate( new Date() );
+			transactionDO.setDescription( description );
+			
+			TransactionTypeDO transactionTypeDO = new TransactionTypeDO();
+			transactionTypeDO.setId( type );
+			transactionDO.setTransactionTypeDO( transactionTypeDO );
+			
+			AccountDO accountDO = new AccountDO();
+			accountDO.setNumber( accountNumber );
+			transactionDO.setAccountDO( accountDO );
+			
+			transactionRepository.save( transactionDO );
+			
+			currentBalance = balanceRepository.getBalance( accountNumber );
 			retreivedAccountDO.setBalance( currentBalance );
 			updatedAccountDO = accountRepository.save( retreivedAccountDO );
 		}
