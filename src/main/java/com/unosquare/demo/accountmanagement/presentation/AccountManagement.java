@@ -43,7 +43,7 @@ public class AccountManagement {
 					input.nextLine();
 					selectedOption = 0;
 				}
-				if ( selectedOption > 1 && !isLoggedIn) {
+				if ( selectedOption > 2 && !isLoggedIn) {
 					System.out.println("User not logged in.");
 					selectedOption = 0;
 				}
