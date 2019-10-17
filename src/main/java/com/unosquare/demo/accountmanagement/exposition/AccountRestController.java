@@ -5,12 +5,15 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.unosquare.demo.accountmanagement.exposition.dto.AccountDTO;
+import com.unosquare.demo.accountmanagement.exposition.dto.CredentialDTO;
 import com.unosquare.demo.accountmanagement.exposition.dto.HolderDTO;
+import com.unosquare.demo.accountmanagement.exposition.dto.OperationDTO;
 import com.unosquare.demo.accountmanagement.exposition.dto.ResponseDTO;
 import com.unosquare.demo.accountmanagement.exposition.dto.TransactionDTO;
 import com.unosquare.demo.accountmanagement.model.AccountDO;
@@ -27,32 +30,30 @@ public class AccountRestController {
 	private AccountService accountService;
 
 	@RequestMapping(value="/authentication", method=RequestMethod.POST)
-	public ResponseDTO authenticate(Long ssn, Integer accountPin) {
+	public ResponseDTO authenticate(@RequestBody CredentialDTO credentialDTO) {
 	
 		ResponseDTO responseDTO = new ResponseDTO();
 		AccountDO accountDO = null;
 
 		try {
 		
-			accountDO = accountService.authenticate( ssn, accountPin );
-			if (accountDO == null)
-				throw new IllegalArgumentException("Login failed.");
+			accountDO = accountService.authenticate( credentialDTO.getSsn(), credentialDTO.getAccountPin() );
 			
 			AccountDTO accountDTO = mapDOToDTO( accountDO );
 			responseDTO.setAccountDTO( accountDTO );
 			responseDTO.setResponseCode( Constants.SUCCESS_CODE );
 			responseDTO.setResponseMessage( Constants.GENERAL_SUCCESS_MESSAGE );
-		} catch(IllegalArgumentException iae) {
+		} catch(IllegalArgumentException | UnsupportedOperationException e) {
 			
 			responseDTO.setResponseCode( Constants.ERROR_CODE );
-			responseDTO.setResponseMessage( iae.getMessage() );
+			responseDTO.setResponseMessage( e.getMessage() );
 		}
 		
 		return responseDTO;
 	}
 	
 	@RequestMapping(method=RequestMethod.POST)
-	public ResponseDTO openAccount(HolderDTO holderDTO) {
+	public ResponseDTO openAccount(@RequestBody HolderDTO holderDTO) {
 		
 		ResponseDTO responseDTO = new ResponseDTO();
 		AccountDO accountDO = null;
@@ -77,8 +78,8 @@ public class AccountRestController {
 		return responseDTO;
 	}
 	
-	@RequestMapping(method=RequestMethod.DELETE)
-	public ResponseDTO closeAccount(Long accountNumber) {
+	@RequestMapping(value="/{id}", method=RequestMethod.DELETE)
+	public ResponseDTO closeAccount(@PathVariable(value="id") Long accountNumber) {
 		
 		ResponseDTO responseDTO = new ResponseDTO();
 		AccountDO accountDO = null;
@@ -86,8 +87,6 @@ public class AccountRestController {
 		try {
 			
 			accountDO = accountService.closeAccount( accountNumber );
-			if (accountDO == null)
-				throw new IllegalArgumentException("Account not found.");
 			AccountDTO accountDTO = mapDOToDTO( accountDO );
 			responseDTO.setAccountDTO( accountDTO );
 			responseDTO.setResponseCode( Constants.SUCCESS_CODE );
@@ -102,16 +101,14 @@ public class AccountRestController {
 	}
 
 	@RequestMapping(value="/deposit", method=RequestMethod.PUT)
-	public ResponseDTO deposit(Long accountNumber, Integer pin, Double amount) {
+	public ResponseDTO deposit(@RequestBody OperationDTO operationDTO) {
 		
 		ResponseDTO responseDTO = new ResponseDTO();
 		AccountDO accountDO = null;
 		
 		try {
 			
-			accountDO = accountService.deposit( accountNumber, pin, amount );
-			if (accountDO == null)
-				throw new IllegalArgumentException("Account not found.");
+			accountDO = accountService.deposit( operationDTO.getAccountNumber(), operationDTO.getPin(), operationDTO.getAmount() );
 			AccountDTO accountDTO = mapDOToDTO( accountDO );
 			responseDTO.setAccountDTO( accountDTO );
 			responseDTO.setResponseCode( Constants.SUCCESS_CODE );
@@ -125,16 +122,13 @@ public class AccountRestController {
 	}
 
 	@RequestMapping(value="/withdrawal", method=RequestMethod.PUT)
-	public ResponseDTO withdrawal(Long accountNumber, Integer pin, Double amount) {
+	public ResponseDTO withdrawal(@RequestBody OperationDTO operationDTO) {
 		
 		ResponseDTO responseDTO = new ResponseDTO();
 		AccountDO accountDO = null;
 		
 		try {
-			accountDO = accountService.withdrawal( accountNumber, pin, amount );
-			if (accountDO == null)
-				throw new IllegalArgumentException("Account not found.");
-			
+			accountDO = accountService.withdrawal( operationDTO.getAccountNumber(), operationDTO.getPin(), operationDTO.getAmount() );
 			AccountDTO accountDTO = mapDOToDTO( accountDO );
 			responseDTO.setAccountDTO( accountDTO );
 			responseDTO.setResponseCode( Constants.SUCCESS_CODE );
@@ -147,34 +141,34 @@ public class AccountRestController {
 		return responseDTO;
 	}
 
-	@RequestMapping(value="/account{id}", method=RequestMethod.GET)
+	@RequestMapping(value="/balance/{id}", method=RequestMethod.GET)
 	public ResponseDTO getBalance(@PathVariable(value="id") Long accountNumber) {
 		
 		ResponseDTO responseDTO = new ResponseDTO();
 		
 		try {
 
-			Double balance = accountService.getBalance( accountNumber );
-			AccountDTO accountDTO = new AccountDTO();
-			accountDTO.setBalance( balance );
+			AccountDO accountDO = accountService.getBalance( accountNumber );
+			AccountDTO accountDTO = mapDOToDTO( accountDO );
 			responseDTO.setAccountDTO(accountDTO);
 			responseDTO.setResponseCode( Constants.SUCCESS_CODE );
 			responseDTO.setResponseMessage( Constants.GENERAL_SUCCESS_MESSAGE );
-		} catch(IllegalArgumentException iae) {
+		} catch(IllegalArgumentException | UnsupportedOperationException e) {
 			
 			responseDTO.setResponseCode( Constants.ERROR_CODE );
-			responseDTO.setResponseMessage( iae.getMessage() );
+			responseDTO.setResponseMessage( e.getMessage() );
 		}
 		
 		return responseDTO;
 	}
 
-	@RequestMapping(value="/process", method=RequestMethod.PUT)
-	public Long processDebitCheck(Long accountNumber, Integer pin, Double amount, Integer type, String description) {
+	@RequestMapping(value="/process", method=RequestMethod.POST)
+	public Long processDebitCheck(@RequestBody OperationDTO operationDTO) {
 		
 		Long transactionCode = null;
 		
-		transactionCode = accountService.processDebitCheck( accountNumber, pin, amount, type, description );
+		transactionCode = accountService.processDebitCheck( operationDTO.getAccountNumber(), operationDTO.getPin(),
+				operationDTO.getAmount(), operationDTO.getTransactionType(), operationDTO.getDescription() );
 		
 		return transactionCode;
 	}
@@ -193,10 +187,7 @@ public class AccountRestController {
 			if ( transactionDOList != null ) {
 				
 				List<TransactionDTO> transactionDTOList = new ArrayList<>();
-				int limit = 5;
-				if (transactionDOList.size() < 5)
-					limit = transactionDOList.size();
-				for (int i=0; i<limit; i++) {
+				for (int i=0; i<transactionDOList.size(); i++) {
 					
 					TransactionDTO transactionDTO = mapDOToDTO( transactionDOList.get(i) );
 					transactionDTOList.add( transactionDTO );

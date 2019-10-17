@@ -11,4 +11,6 @@ import com.unosquare.demo.accountmanagement.model.TransactionDO;
 public interface TransactionRepository extends JpaRepository<TransactionDO, Long> {
 
 	List<TransactionDO> findByAccountDO_number(Long accountNumber);
+	
+	List<TransactionDO> findTop5ByAccountDO_numberOrderByIdDesc(Long accountNumber);
 }

@@ -2,7 +2,10 @@ package com.unosquare.demo.accountmanagement.service.impl;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+
+import javax.persistence.EntityNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,15 +36,28 @@ public class AccountServiceImpl implements AccountService {
 	
 	
 	@Override
-	public AccountDO authenticate(Long ssn, Integer accountPin) throws IllegalArgumentException {
+	public AccountDO authenticate(Long ssn, Integer accountPin) throws IllegalArgumentException, UnsupportedOperationException {
 		
 		AccountDO accountDO = null;
 		
-		if ( ssn==null || accountPin==null ) 
-			throw new IllegalArgumentException("Values for ssn and account pint must not be null.");
+		if ( ssn == null ) 
+			throw new IllegalArgumentException("Value for SSN must not be null.");
+		
+		if ( accountPin == null )
+			throw new IllegalArgumentException("Value for account PIN must not be null.");
 		
 		accountDO = accountRepository.findByHolderDO_ssnAndPin(ssn, accountPin);
 		
+		if (accountDO == null)
+			throw new IllegalArgumentException("Login failed.");
+		
+		if ( !accountDO.getEnabled() )
+			throw new UnsupportedOperationException("The account is closed");
+		
+		// Limit number of transactions to 5
+		List<TransactionDO> transactionDOList = transactionRepository.findTop5ByAccountDO_numberOrderByIdDesc( accountDO.getNumber() );
+		accountDO.setTransactionDOList( transactionDOList );
+				
 		return accountDO;
 	}
 
@@ -52,7 +68,7 @@ public class AccountServiceImpl implements AccountService {
 		AccountDO createdAccountDO = null;
 		
 		if ( !validateHolderDO( holderDO ) )
-			throw new IllegalArgumentException("First name and last name must not be null or empty.");
+			throw new IllegalArgumentException("SSN, first name and last name must not be null or empty.");
 		
 		AccountDO accountDO = new AccountDO();
 		accountDO.setNumber( this.generateAccountNumber() );
@@ -76,15 +92,23 @@ public class AccountServiceImpl implements AccountService {
 		if (accountNumber == null)
 			throw new IllegalArgumentException("Account number must not be null.");
 		
-		accountDO = accountRepository.getOne( accountNumber );
-		if ( accountDO != null ) {
-			
+		try {
+		
+			accountDO = accountRepository.getOne( accountNumber );
 			if ( accountDO.getBalance() < 0D )
 				throw new UnsupportedOperationException("The account is overdrawn, therefore it cannot be closed.");
 			
 			accountDO.setEnabled( Boolean.FALSE );
 			accountRepository.save( accountDO );
+			
+		} catch(EntityNotFoundException enfe) {
+			
+			throw new IllegalArgumentException("Account not found.");
 		}
+		
+		// Limit number of transactions to 5
+		List<TransactionDO> transactionDOList = transactionRepository.findTop5ByAccountDO_numberOrderByIdDesc( accountNumber );
+		accountDO.setTransactionDOList( transactionDOList );
 		
 		return accountDO;
 	}
@@ -120,21 +144,38 @@ public class AccountServiceImpl implements AccountService {
 	}
 
 	@Override
-	public Double getBalance(Long accountNumber) throws IllegalArgumentException {
+	public AccountDO getBalance(Long accountNumber) throws IllegalArgumentException, UnsupportedOperationException {
 		
 		Double currentBalance = null;
+		AccountDO accountDO = null;
 		
 		if (accountNumber == null)
 			throw new IllegalArgumentException("Account number must not be null.");
 		
-		currentBalance = balanceRepository.getBalance( accountNumber );
+		try {
 		
-		return currentBalance;
+			accountDO = accountRepository.getOne( accountNumber );
+		} catch(EntityNotFoundException enfe) {
+			
+			throw new IllegalArgumentException("Account not found.");
+		}
+		
+		if ( !accountDO.getEnabled() )
+			throw new UnsupportedOperationException("The account is closed");
+		
+		currentBalance = balanceRepository.getBalance( accountNumber );
+		accountDO.setBalance( currentBalance );
+		
+		// Limit number of transactions to 5
+		List<TransactionDO> transactionDOList = transactionRepository.findTop5ByAccountDO_numberOrderByIdDesc(accountNumber);
+		accountDO.setTransactionDOList( transactionDOList );
+		
+		return accountDO;
 	}
 
 	@Transactional
 	@Override
-	public Long processDebitCheck(Long accountNumber, Integer accountPin, Double amount, Integer type,
+	public Long processDebitCheck(Long accountNumber, Integer accountPin, Double amount, Long type,
 			String description) throws IllegalArgumentException, UnsupportedOperationException {
 		
 		AccountDO updatedAccountDO = null;
@@ -146,7 +187,7 @@ public class AccountServiceImpl implements AccountService {
 		if ( description == null || description.trim().equals(Constants.EMPTY_STRING) )
 			throw new IllegalArgumentException("Description must not be null or empty.");
 		
-		updatedAccountDO = processTransaction(accountNumber, accountPin, amount, Constants.TRASACTION_TYPE_WITHDRAWAL, description);
+		updatedAccountDO = processTransaction(accountNumber, accountPin, amount, type, description);
 		if ( updatedAccountDO != null && 
 			 updatedAccountDO.getTransactionDOList() != null && 
 			 updatedAccountDO.getTransactionDOList().get(0) != null ) {
@@ -156,24 +197,30 @@ public class AccountServiceImpl implements AccountService {
 		return transactionId;
 	}
 	
-	@Transactional
 	private synchronized AccountDO processTransaction(Long accountNumber, Integer accountPin,
-			Double amount, int type, String description) throws UnsupportedOperationException {
+			Double amount, Long type, String description) throws UnsupportedOperationException {
 		
 		AccountDO updatedAccountDO = null;
 		Double currentBalance = null;
+		AccountDO retrievedAccountDO = null;
 		
-		AccountDO retreivedAccountDO = accountRepository.getOne( accountNumber );
-		if ( retreivedAccountDO == null )
-			throw new UnsupportedOperationException("Account not found.");
+		try {
+			
+			retrievedAccountDO = accountRepository.getOne( accountNumber );
+		} catch(EntityNotFoundException enfe) {
+			
+			throw new IllegalArgumentException("Account not found.");
+		}
+		if ( !retrievedAccountDO.getEnabled() )
+			throw new UnsupportedOperationException("The account is closed");
 		
-		if ( retreivedAccountDO.getPin() != accountPin )
+		if ( !retrievedAccountDO.getPin().equals( accountPin ) )
 			throw new UnsupportedOperationException("Forbidden transaction. Invalid PIN.");
 		
-		if ( type == Constants.TRASACTION_TYPE_WITHDRAWAL || 
-				type == Constants.TRASACTION_TYPE_DEBIT ) {
+		if ( type.equals( Constants.TRASACTION_TYPE_WITHDRAWAL ) || 
+			 type.equals( Constants.TRASACTION_TYPE_DEBIT ) ) {
 		
-			currentBalance = retreivedAccountDO.getBalance();
+			currentBalance = retrievedAccountDO.getBalance();
 			if ( currentBalance < 0D )
 				throw new UnsupportedOperationException("Forbidden transaction. The account is overdrawn.");
 			if ( currentBalance < amount ) 
@@ -197,9 +244,13 @@ public class AccountServiceImpl implements AccountService {
 		transactionRepository.save( transactionDO );
 		
 		currentBalance = balanceRepository.getBalance( accountNumber );
-		retreivedAccountDO.setBalance( currentBalance );
-		updatedAccountDO = accountRepository.save( retreivedAccountDO );
+		retrievedAccountDO.setBalance( currentBalance );
+		updatedAccountDO = accountRepository.save( retrievedAccountDO );
 	
+		// Limit number of transactions to 5
+		List<TransactionDO> transactionDOList = transactionRepository.findTop5ByAccountDO_numberOrderByIdDesc(accountNumber);
+		updatedAccountDO.setTransactionDOList( transactionDOList );
+		
 		return updatedAccountDO;
 	}
 	
@@ -235,7 +286,8 @@ public class AccountServiceImpl implements AccountService {
 		if ( holderDO == null )
 			return false;
 		
-		if ( holderDO.getFirstName() == null || 
+		if ( holderDO.getSsn() == null ||
+			 holderDO.getFirstName() == null || 
 			 holderDO.getLastName() == null ||
 			 holderDO.getFirstName().trim().equals(Constants.EMPTY_STRING) || 
 			 holderDO.getLastName().trim().equals(Constants.EMPTY_STRING) )

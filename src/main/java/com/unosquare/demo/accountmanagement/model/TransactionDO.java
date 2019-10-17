@@ -12,7 +12,7 @@ import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name="transactions")
@@ -25,11 +25,11 @@ public class TransactionDO {
 	@Temporal(TemporalType.TIMESTAMP)
 	private Date date;
 	
-	@OneToOne(optional=false)
-	@JoinColumn(name="id")
+	@ManyToOne
+	@JoinColumn(name="transaction_type_id", nullable=false)
 	private TransactionTypeDO transactionTypeDO; // deposit, withdrawal, debit, checks
 	
-	@NotBlank
+	@NotNull
 	private Double amount;
 	
 	private String description; // i.e. Movie tickets, Gasoline, deposit, etc.

@@ -11,6 +11,6 @@ public interface AccountService {
 	AccountDO closeAccount(Long accountNumber) throws IllegalArgumentException, UnsupportedOperationException;
 	AccountDO deposit(Long accountNumber, Integer pin, Double amount) throws IllegalArgumentException, UnsupportedOperationException;
 	AccountDO withdrawal(Long accountNumber, Integer pin, Double amount) throws IllegalArgumentException, UnsupportedOperationException;
-	Double getBalance(Long accountNumber) throws IllegalArgumentException;
-	Long processDebitCheck(Long accountNumber, Integer pin, Double amount, Integer type, String description) throws IllegalArgumentException, UnsupportedOperationException;
+	AccountDO getBalance(Long accountNumber) throws IllegalArgumentException;
+	Long processDebitCheck(Long accountNumber, Integer pin, Double amount, Long type, String description) throws IllegalArgumentException, UnsupportedOperationException;
 }

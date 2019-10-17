@@ -1,9 +1,11 @@
 package com.unosquare.demo.accountmanagement.model;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 
 @Entity
@@ -11,18 +13,20 @@ import javax.validation.constraints.NotBlank;
 public class TransactionTypeDO {
 
 	@Id
-	private Integer id;
+	@Column(name="transaction_type_id")
+	private Long id;
 	
-	@NotBlank
+	@NotNull
+	@NotEmpty
 	private String name;
 	
 	private String description;
 	
 	
-	public Integer getId() {
+	public Long getId() {
 		return id;
 	}
-	public void setId(Integer id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 	public String getName() {

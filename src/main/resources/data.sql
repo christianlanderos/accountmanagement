@@ -1,4 +1,4 @@
-INSERT INTO transaction_types (id, name, description) VALUES
+INSERT INTO transaction_types (transaction_type_id, name, description) VALUES
   (1, 'DEPOSIT', 'Making a deposit'),
   (2, 'WITHDRAWAL', 'Making a withdrawal'),
   (3, 'DEBIT', 'Process debit charge'),

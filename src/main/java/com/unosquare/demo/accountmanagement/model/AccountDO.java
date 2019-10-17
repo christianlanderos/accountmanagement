@@ -9,12 +9,13 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.NamedQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import com.unosquare.demo.accountmanagement.util.Constants;
 
@@ -23,11 +24,10 @@ import com.unosquare.demo.accountmanagement.util.Constants;
 public class AccountDO {
 
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="number", length=12)
 	private Long number; // account number
 	
-	@NotBlank
+	@NotNull
 	@Max(Constants.MAX_PIN_VALUE)
 	@Min(Constants.MIN_PIN_VALUE)
 	@Column(name="pin", length=4)
@@ -40,7 +40,7 @@ public class AccountDO {
 	@OneToMany(cascade=CascadeType.ALL, mappedBy="accountDO")
 	private List<TransactionDO> transactionDOList;
 	
-	@OneToOne(optional=false)
+	@OneToOne(cascade=CascadeType.ALL, optional=false)
 	@JoinColumn(name="ssn")
 	private HolderDO holderDO;
 	

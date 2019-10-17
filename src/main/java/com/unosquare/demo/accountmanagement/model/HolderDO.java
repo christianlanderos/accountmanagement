@@ -3,7 +3,8 @@ package com.unosquare.demo.accountmanagement.model;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name="account_holders")
@@ -12,10 +13,12 @@ public class HolderDO {
 	@Id
 	private Long ssn;
 	
-	@NotBlank
+	@NotNull
+	@NotEmpty
 	private String firstName; // required
 	
-	@NotBlank
+	@NotNull
+	@NotEmpty
 	private String lastName; // required
 	
 	
