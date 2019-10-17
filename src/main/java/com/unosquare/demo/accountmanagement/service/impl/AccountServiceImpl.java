@@ -21,15 +21,28 @@ import com.unosquare.demo.accountmanagement.repository.TransactionRepository;
 import com.unosquare.demo.accountmanagement.service.AccountService;
 import com.unosquare.demo.accountmanagement.util.Constants;
 
+/**
+ * @author Landeros
+ *
+ */
 @Service
 public class AccountServiceImpl implements AccountService {
 
+	/**
+	 * Account repository
+	 */
 	@Autowired
 	private AccountRepository accountRepository;
 	
+	/**
+	 * Transaction repository
+	 */
 	@Autowired
 	private TransactionRepository transactionRepository;
 	
+	/**
+	 * Balance repository
+	 */
 	@Autowired
 	private BalanceRepository balanceRepository;
 
